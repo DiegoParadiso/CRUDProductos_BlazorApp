@@ -1,0 +1,108 @@
+﻿@page "/products"
+
+@using CRUD_Productos.Shared;
+@inject HttpClient client;
+@inject NavigationManager navigationManager
+@inject IJSRuntime js
+
+<h3>Lista de productos</h3>
+
+<button class="btn btn-primary mt-4" @onclick="OnClickAdd">
+    Nuevo Producto <i class="oi oi-plus m-1"></i>
+</button>
+
+<table class="table mt-4">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (products == null && isLoading)
+        {
+            <tr>
+                <td colspan="8" align="center">Cargando...</td>
+            </tr>
+        }
+        else if (products == null && !isLoading)
+        {
+            <tr>
+                <td colspan="8" align="center">No encontrado...</td>
+            </tr>
+        }
+        else if (products != null && products.Count == 0)
+        {
+            <tr>
+                <td colspan="8" align="center">No encontrado...</td>
+            </tr>
+        }
+        else if (products != null && products.Count > 0)
+        {
+            foreach (var product in products)
+            {
+                <tr>
+                    <td width="10%">@product.Code</td>
+                    <td width="25%">@product.Name</td>
+                    <td width="10%">@product.Price</td>
+                    <td width="20%">
+                        <a href="@($"/product/edit/{product.Id}")" class="btn btn-primary">
+                            Editar <i class="oi oi-pencil m-1"></i>
+                        </a>
+
+                        <button @onclick="@(() => Delete(product))" class="btn btn-danger">
+                            Eliminar <i class="oi oi-trash m-1"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Product>? products;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetAllProducts();
+    }
+
+    private async Task GetAllProducts()
+    {
+        try
+        {
+            isLoading = true;
+            products = await client.GetFromJsonAsync<List<Product>>("api/products/getproducts");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnClickAdd()
+    {
+        navigationManager.NavigateTo("/product/add");
+    }
+
+    private async void Delete(Product product)
+    {
+        bool confirm = await js.InvokeAsync<bool>("confirm", $"Estás seguro que  {product.Name}?");
+
+        if (confirm)
+        {
+            var result = await client.DeleteAsync($"api/products/deleteproduct/{product.Id}");
+
+            await GetAllProducts();
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,76 @@
+﻿@page "/product/edit/{Id:int}"
+@using CRUD_Productos.Shared;
+@inject HttpClient client;
+@inject NavigationManager nm
+<h3>Edit Product</h3>
+
+<hr />
+<div style="width:60%;">
+    <EditForm Model="product" OnValidSubmit="Update">
+        <DataAnnotationsValidator />
+
+        @*Code*@
+        <div class="row mb-3">
+            <label for="code" class="col-sm-2 col-form-label">Code</label>
+            <div class="col-sm-10">
+                <InputText class="form-control" id="code" @bind-Value="@product.Code" />
+                <ValidationMessage For="@(() => product.Code)" />
+            </div>
+        </div>
+
+        @*Name*@
+        <div class="row mb-3">
+            <label for="name" class="col-sm-2 col-form-label">Name</label>
+            <div class="col-sm-10">
+                <InputText class="form-control" id="name" @bind-Value="@product.Name" />
+                <ValidationMessage For="@(() => product.Name)" />
+            </div>
+        </div>
+
+        @*Price*@
+        <div class="row mb-3">
+            <label for="price" class="col-sm-2 col-form-label">Price</label>
+            <div class="col-sm-10">
+                <InputNumber class="form-control" id="price" @bind-Value="@product.Price" />
+                <ValidationMessage For="@(() => product.Price)" />
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <a class="btn btn-secondary col-2 m-1" href="/">
+                Cancel
+            </a>
+
+            <button class="btn btn-primary col-2  m-1" type="submit">
+                Save
+            </button>
+        </div>
+
+    </EditForm>
+</div>
+
+@code {
+    private Product product = new Product();
+    [Parameter] public int Id { get; set; }
+    private bool Active = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id == 0)
+        {
+            return;
+        }
+
+        product = await client.GetFromJsonAsync<Product>($"api/products/getproduct/{Id}") ?? null!;
+
+    }
+    private async Task Update()
+    {
+        var result = await client.PostAsJsonAsync("api/products/editproduct", product);
+
+        if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            nm.NavigateTo("/");
+        }
+    }
+}
